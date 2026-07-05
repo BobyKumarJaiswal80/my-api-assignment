@@ -38,6 +38,6 @@ async def verify_token(request: Request):
             "sub": payload.get("sub"),
             "aud": payload.get("aud")
         }
-    except:
-        # Agar token galti hai (tampered, expired, etc), toh ye return karo
+    except Exception as e:
+        print(f"Error: {e}") # Isse Render ke logs mein pata chalega ki expiry fail hui ya signature
         return {"valid": False}
