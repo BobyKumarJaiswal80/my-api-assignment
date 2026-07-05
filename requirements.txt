@@ -1,5 +1,4 @@
 fastapi
 uvicorn
-numpy
 pyjwt
 cryptography
