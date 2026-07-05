@@ -23,7 +23,6 @@ async def verify_token(request: Request):
     token = data.get("token")
     
     try:
-        # JWT verify karna (signature, issuer, audience, expiry)
         payload = jwt.decode(
             token, 
             PUBLIC_KEY, 
@@ -31,13 +30,15 @@ async def verify_token(request: Request):
             issuer=EXPECTED_ISSUER,
             audience=EXPECTED_AUDIENCE
         )
-        # Agar token sahi hai, toh ye return karo
         return {
             "valid": True,
             "email": payload.get("email"),
             "sub": payload.get("sub"),
             "aud": payload.get("aud")
         }
+    except jwt.ExpiredSignatureError:
+        return {"valid": False, "error": "expired"}
+    except jwt.InvalidSignatureError:
+        return {"valid": False, "error": "signature_mismatch"}
     except Exception as e:
-        print(f"Error: {e}") # Isse Render ke logs mein pata chalega ki expiry fail hui ya signature
-        return {"valid": False}
+        return {"valid": False, "error": str(e)}
