@@ -1,44 +1,40 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import jwt
 
 app = FastAPI()
 
-# Yeh wo Public Key hai jo aapke assignment mein di gayi hai
-PUBLIC_KEY ="""-----BEGIN PUBLIC KEY-----
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAQEA2okOhSpNjga+2rTLbeuY
-cxIP/hGBC6Sb9iwg3yIAA4HCnpITcbWCSeIbvbYGuc3EBny4xFyf5Cbj5DHJMlD
-Ekry0gyd2giIII BOUB j8S63UgCnRpOBH9NFatfNwh eKuzsPuVNLdu6A9cNteNpXc
-W yjG2axVFmq7i6SuKr1JOWYG7xTTAVKPuj5140tsQF03h5NepzdfXpr2BoNnzFw
-ed+zcLR6BcmNno/WVfJ4xycLSf08BCQgdTgW6PdaChd119VDetJZVEgC5tkyvXsFI
-SI6iyrYbKRONebSq q4XKade jsCs4F1RncsS4Lligni7G1kL9Mce3b0wGLs9/7ZIX
+PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2okOHspNjgA+2rTLbeuY
+cxiP/hG8C6Sb9iwg3yiLAA4HCnpITcbWCSelbvbYGuc3EbNy4xFyf5Cbj5DHJMID
+EkryOgyd2giIIIBOUBj8S63uGcnRpOBh9NFatfNwheKuzsPuVNldu6A9cNteNpXc
+WyJjG2axVfmq7i6SuKr1JoWYG7xTTAvKPujSl4OtsQfO3h5NepzdfXpr28oNnzfW
+ed+zclR6BcmNNo/WVfJ4xyCLSf0BCOgdTgW6PdaChd1l9VDetJZVEgC5tkyvXsfI
+SI6iyrYbKR0NEBSqq4XkadEjsCs4F1RncsS4LlgniT7GlkL9Mce3b0wGLs9/7ZIX
 dQIDAQAB
 -----END PUBLIC KEY-----"""
-# Yeh rules hain jo token ko check karne ke liye chahiye
+
 EXPECTED_ISSUER = "https://idp.exam.local"
 EXPECTED_AUDIENCE = "tds-hxbe6r1c.apps.exam.local"
 
+class VerifyRequest(BaseModel):
+    token: str
+
 @app.post("/verify")
-async def verify_token(request: Request):
-    data = await request.json()
-    token = data.get("token")
-    
+async def verify_token(body: VerifyRequest):
     try:
         payload = jwt.decode(
-            token, 
-            PUBLIC_KEY, 
+            body.token,
+            PUBLIC_KEY,
             algorithms=["RS256"],
             issuer=EXPECTED_ISSUER,
-            audience=EXPECTED_AUDIENCE
+            audience=EXPECTED_AUDIENCE,
         )
         return {
             "valid": True,
             "email": payload.get("email"),
             "sub": payload.get("sub"),
-            "aud": payload.get("aud")
+            "aud": payload.get("aud"),
         }
-    except jwt.ExpiredSignatureError:
-        return {"valid": False, "error": "expired"}
-    except jwt.InvalidSignatureError:
-        return {"valid": False, "error": "signature_mismatch"}
-    except Exception as e:
-        return {"valid": False, "error": str(e)}
+    except Exception:
+        raise HTTPException(status_code=401, detail={"valid": False})
