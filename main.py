@@ -13,7 +13,6 @@ ed+zcLR6BcmNno/WVfJ4xycLSf08BCQgdTgW6PdaChd119VDetJZVEgC5tkyvXsFI
 SI6iyrYbKRONebSq q4XKade jsCs4F1RncsS4Lligni7G1kL9Mce3b0wGLs9/7ZIX
 dQIDAQAB
 -----END PUBLIC KEY-----"""
-
 # Yeh rules hain jo token ko check karne ke liye chahiye
 EXPECTED_ISSUER = "https://idp.exam.local"
 EXPECTED_AUDIENCE = "tds-hxbe6r1c.apps.exam.local"
