@@ -1,1 +1,37 @@
-{"nbformat":4,"nbformat_minor":0,"metadata":{"colab":{"provenance":[],"authorship_tag":"ABX9TyN8u9K5HUAqCa2af2zc+5uw"},"kernelspec":{"name":"python3","display_name":"Python 3"},"language_info":{"name":"python"}},"cells":[{"cell_type":"code","execution_count":1,"metadata":{"id":"LglSgq8mEdAJ","executionInfo":{"status":"ok","timestamp":1783234734265,"user_tz":-330,"elapsed":822,"user":{"displayName":"24F2000080 BOBY KUMAR JAISWAL","userId":"12628502148168237650"}}},"outputs":[],"source":["import time\n","import uuid\n","from fastapi import FastAPI, Request\n","from fastapi.middleware.cors import CORSMiddleware\n","import numpy as np\n","\n","app = FastAPI()\n","\n","# 1. CORS Policy Setup\n","origins = [\"https://dash-w096j7.example.com\"] # Yahan apna assigned origin dalein\n","\n","app.add_middleware(\n","    CORSMiddleware,\n","    allow_origins=origins,\n","    allow_methods=[\"*\"],\n","    allow_headers=[\"*\"],\n",")\n","\n","# 2. Middleware for X-Request-ID and X-Process-Time\n","@app.middleware(\"http\")\n","async def add_custom_headers(request: Request, call_next):\n","    start_time = time.time()\n","    response = await call_next(request)\n","    process_time = time.time() - start_time\n","\n","    response.headers[\"X-Request-ID\"] = str(uuid.uuid4())\n","    response.headers[\"X-Process-Time\"] = str(process_time)\n","    return response\n","\n","# 3. Endpoint /stats\n","@app.get(\"/stats\")\n","async def get_stats(values: str):\n","    # Data parsing\n","    nums = [float(x) for x in values.split(\",\")]\n","\n","    return {\n","        \"email\": \"your-email@example.com\", # Apni email likhein\n","        \"count\": len(nums),\n","        \"sum\": sum(nums),\n","        \"min\": min(nums),\n","        \"max\": max(nums),\n","        \"mean\": np.mean(nums)\n","    }"]}]}
+import time
+import uuid
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+import numpy as np
+
+app = FastAPI()
+
+origins = ["https://dash-w096j7.example.com"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def add_custom_headers(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Request-ID"] = str(uuid.uuid4())
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
+
+@app.get("/stats")
+async def get_stats(values: str):
+    nums = [float(x) for x in values.split(",")]
+    return {
+        "email": "24f2000080@ds.study.iitm.ac.in",
+        "count": len(nums),
+        "sum": sum(nums),
+        "min": min(nums),
+        "max": max(nums),
+        "mean": float(np.mean(nums))
+    }
