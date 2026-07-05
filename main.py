@@ -4,7 +4,7 @@ import jwt
 app = FastAPI()
 
 # Yeh wo Public Key hai jo aapke assignment mein di gayi hai
-PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+PUBLIC_KEY ="""-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAQEA2okOhSpNjga+2rTLbeuY
 cxIP/hGBC6Sb9iwg3yIAA4HCnpITcbWCSeIbvbYGuc3EBny4xFyf5Cbj5DHJMlD
 Ekry0gyd2giIII BOUB j8S63UgCnRpOBH9NFatfNwh eKuzsPuVNLdu6A9cNteNpXc
