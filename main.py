@@ -1,37 +1,44 @@
-import time
-import uuid
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-import numpy as np
+import jwt
 
 app = FastAPI()
 
-origins = ["https://dash-w096j7.example.com"]
+# Yeh wo Public Key hai jo aapke assignment mein di gayi hai
+PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAQEA2okOhSpNjga+2rTLbeuY
+cxIP/hGBC6Sb9iwg3yIAA4HCnpITcbWCSeIbvbYGuc3EBny4xFyf5Cbj5DHJMlD
+Ekry0gyd2giIII BOUB j8S63UgCnRpOBH9NFatfNwh eKuzsPuVNLdu6A9cNteNpXc
+W yjG2axVFmq7i6SuKr1JOWYG7xTTAVKPuj5140tsQF03h5NepzdfXpr2BoNnzFw
+ed+zcLR6BcmNno/WVfJ4xycLSf08BCQgdTgW6PdaChd119VDetJZVEgC5tkyvXsFI
+SI6iyrYbKRONebSq q4XKade jsCs4F1RncsS4Lligni7G1kL9Mce3b0wGLs9/7ZIX
+dQIDAQAB
+-----END PUBLIC KEY-----"""
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Yeh rules hain jo token ko check karne ke liye chahiye
+EXPECTED_ISSUER = "https://idp.exam.local"
+EXPECTED_AUDIENCE = "tds-hxbe6r1c.apps.exam.local"
 
-@app.middleware("http")
-async def add_custom_headers(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Request-ID"] = str(uuid.uuid4())
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-
-@app.get("/stats")
-async def get_stats(values: str):
-    nums = [float(x) for x in values.split(",")]
-    return {
-        "email": "24f2000080@ds.study.iitm.ac.in",
-        "count": len(nums),
-        "sum": sum(nums),
-        "min": min(nums),
-        "max": max(nums),
-        "mean": float(np.mean(nums))
-    }
+@app.post("/verify")
+async def verify_token(request: Request):
+    data = await request.json()
+    token = data.get("token")
+    
+    try:
+        # JWT verify karna (signature, issuer, audience, expiry)
+        payload = jwt.decode(
+            token, 
+            PUBLIC_KEY, 
+            algorithms=["RS256"],
+            issuer=EXPECTED_ISSUER,
+            audience=EXPECTED_AUDIENCE
+        )
+        # Agar token sahi hai, toh ye return karo
+        return {
+            "valid": True,
+            "email": payload.get("email"),
+            "sub": payload.get("sub"),
+            "aud": payload.get("aud")
+        }
+    except:
+        # Agar token galti hai (tampered, expired, etc), toh ye return karo
+        return {"valid": False}
