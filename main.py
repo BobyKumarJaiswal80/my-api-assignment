@@ -101,16 +101,26 @@ async def get_count(key: str):
 async def healthz():
     return {"status": "ok", "redis": "up"}
 
-# Q5: Analytics (Header handling fix)
+# Q5: Final Fixed Analytics
 @app.post("/analytics")
-async def analytics(data: dict, x_api_key: str = Header(None, alias="X-API-KEY")):
-    # Agar key missing hai ya galat hai, 401 return karo
-    if x_api_key != "ak_yszijq2eseo8gstan0dx9ow8":
+async def analytics(
+    data: dict, 
+    x_api_key: str = Header(None, alias="X-API-KEY"),
+    x_api_key_alt: str = Header(None, alias="x-api-key")
+):
+    # Dono mein se jo bhi mil jaye, use use karo
+    key = x_api_key or x_api_key_alt
+    
+    if key != "ak_yszijq2eseo8gstan0dx9ow8":
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    # ... baki ka logic wahi rahega ...
     events = data.get("events", [])
+    
+    # Stats Calculation
     revenue = sum(e.get("amount", 0) for e in events if e.get("amount", 0) > 0)
+    user_list = [e.get("user") for e in events if e.get("user")]
+    unique_users = len(set(user_list))
+    
     user_totals = {}
     for e in events:
         user = e.get("user")
@@ -123,7 +133,7 @@ async def analytics(data: dict, x_api_key: str = Header(None, alias="X-API-KEY")
     return {
         "email": "24f2000080@ds.study.iitm.ac.in",
         "total_events": len(events),
-        "unique_users": len(set(e.get("user") for e in events if e.get("user"))),
+        "unique_users": unique_users,
         "revenue": float(revenue),
         "top_user": top_user
     }
