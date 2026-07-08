@@ -1,7 +1,6 @@
 fastapi
 uvicorn
-pyjwt[crypto]
+PyJWT[crypto]
 pyyaml
 numpy
-redis
-requests
+psutil
