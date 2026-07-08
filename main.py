@@ -27,7 +27,7 @@ async def add_headers(request: Request, call_next):
 @app.get("/stats")
 async def get_stats(values: str):
     nums = [float(x) for x in values.split(",")]
-    return {"email": "24f2000080@bhu.ac.in", "count": len(nums), "sum": sum(nums), "min": min(nums), "max": max(nums), "mean": float(np.mean(nums))}
+    return {"email": "24f2000080@ds.study.iitm.ac.in", "count": len(nums), "sum": sum(nums), "min": min(nums), "max": max(nums), "mean": float(np.mean(nums))}
 
 # Q2: Verify (Public key ko sahi se handle karega)
 @app.post("/verify")
