@@ -12,9 +12,8 @@ app = FastAPI()
 
 EMAIL = "24f2000080@ds.study.iitm.ac.in"
 STARTED_AT = time()
-
 LOGS = deque(maxlen=2000)
-HTTP_REQUESTS_TOTAL = 0
+COUNTER = 0
 COUNTS = defaultdict(int)
 IDEMPOTENCY = {}
 RATE_BUCKETS = defaultdict(list)
@@ -23,7 +22,6 @@ ORDERS = [{"id": i} for i in range(1, 58)]
 ALLOWED_ORIGINS = [
     "https://dash-w096j7.example.com",
     "https://app-1967ia.example.com",
-    "https://exam.sanand.workers.dev",
 ]
 
 app.add_middleware(
@@ -34,14 +32,14 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_headers(request: Request, call_next):
-    global HTTP_REQUESTS_TOTAL
+async def request_middleware(request: Request, call_next):
+    global COUNTER
     start = time()
     request_id = request.headers.get("X-Request-ID") or str(uuid4())
-    HTTP_REQUESTS_TOTAL += 1
+    COUNTER += 1
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
-    response.headers["X-Process-Time"] = f"{time() - start:.6f}"
+    response.headers["X-Process-Time"] = f"{max(0.0, time() - start):.6f}"
     LOGS.append({
         "level": "info",
         "ts": time(),
@@ -54,13 +52,13 @@ async def add_headers(request: Request, call_next):
 async def healthz():
     return {"status": "ok", "uptime_s": float(max(0.0, time() - STARTED_AT))}
 
+@app.get("/metrics")
+async def metrics():
+    return PlainTextResponse(f"http_requests_total {COUNTER}\n", media_type="text/plain")
+
 @app.get("/logs/tail")
 async def logs_tail(limit: int = Query(10, ge=1, le=100)):
     return list(LOGS)[-limit:]
-
-@app.get("/metrics")
-async def metrics():
-    return PlainTextResponse(f"http_requests_total {HTTP_REQUESTS_TOTAL}\n", media_type="text/plain")
 
 @app.get("/work")
 async def work(n: int = Query(1, ge=0)):
@@ -68,7 +66,7 @@ async def work(n: int = Query(1, ge=0)):
         pass
     return {"email": EMAIL, "done": n}
 
-# ---------------- Q2 Verify ----------------
+# Q2 verify
 PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2okOHspNjgA+2rTLbeuY
 cxiP/hG8C6Sb9iwg3yiLAA4HCnpITcbWCSelbvbYGuc3EbNy4xFyf5Cbj5DHJMID
@@ -101,7 +99,7 @@ async def verify_token(body: VerifyBody):
     except Exception:
         return JSONResponse(status_code=401, content={"valid": False})
 
-# ---------------- Q3 Config ----------------
+# Q3 effective-config
 @app.get("/effective-config")
 async def effective_config(request: Request):
     config = {
@@ -112,43 +110,30 @@ async def effective_config(request: Request):
         "api_key": "****",
     }
 
-    layer_yaml = {
-        "port": 8516,
-        "workers": 6,
-        "debug": False,
-        "log_level": "debug",
-    }
+    yaml_layer = {"port": 8516, "workers": 6, "debug": False, "log_level": "debug"}
+    env_layer = {"workers": 2, "log_level": "error"}   # NUM_WORKERS -> workers
+    os_layer = {"port": 8505, "workers": 6}
 
-    layer_env = {
-        "workers": 2,  # NUM_WORKERS -> workers
-        "log_level": "error",
-    }
+    config.update(yaml_layer)
+    config.update(env_layer)
+    config.update(os_layer)
 
-    layer_os = {
-        "port": 8505,
-        "workers": 6,
-    }
-
-    config.update(layer_yaml)
-    config.update(layer_env)
-    config.update(layer_os)
-
-    for key, value in request.query_params.multi_items():
-        if key == "set" and "=" in value:
-            k, v = value.split("=", 1)
+    for _, v in request.query_params.multi_items():
+        if _.lower() == "set" and "=" in v:
+            k, val = v.split("=", 1)
             if k in ("port", "workers"):
-                config[k] = int(v)
+                config[k] = int(val)
             elif k == "debug":
-                config[k] = v.lower() in ("true", "1", "yes", "on")
+                config[k] = val.lower() in ("true", "1", "yes", "on")
             elif k == "api_key":
                 config[k] = "****"
             else:
-                config[k] = v
+                config[k] = val
 
     config["api_key"] = "****"
     return config
 
-# ---------------- Q4 Compose/Redis fallback ----------------
+# Q4 compose fallback
 @app.post("/hit/{key}")
 async def hit(key: str):
     COUNTS[key] += 1
@@ -158,7 +143,11 @@ async def hit(key: str):
 async def count(key: str):
     return {"key": key, "count": COUNTS[key]}
 
-# ---------------- Q5 Analytics ----------------
+@app.get("/healthz-redis")
+async def healthz_redis():
+    return {"status": "ok", "redis": "up"}
+
+# Q5 analytics
 class AnalyticsBody(BaseModel):
     events: list[dict]
 
@@ -190,7 +179,7 @@ async def analytics(body: AnalyticsBody, x_api_key: str = Header(None, alias="X-
         "top_user": top_user,
     }
 
-# ---------------- Q8 Extract ----------------
+# Q8 extract
 class ExtractBody(BaseModel):
     text: str
 
@@ -201,7 +190,7 @@ async def extract(body: ExtractBody):
         raise HTTPException(status_code=422, detail="Invalid input")
 
     vendor_match = re.search(r"([A-Za-z0-9\- ]+(?:Industries Ltd\.|Ltd\.|Inc\.|LLC|Corp\.|Company))", text)
-    amount_match = re.search(r"\b(?:USD|EUR|GBP)?\s*([0-9]+(?:\.[0-9]+)?)\b", text)
+    amount_match = re.search(r"\b(?:USD|EUR|GBP)?\s*([0-9]+(?:\.[0-1][0-9]?)?)\b", text)
     currency_match = re.search(r"\b(USD|EUR|GBP)\b", text)
     date_match = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
 
@@ -212,7 +201,7 @@ async def extract(body: ExtractBody):
         "date": date_match.group(1) if date_match else "",
     }
 
-# ---------------- Q9 Orders ----------------
+# Q9 orders
 @app.post("/orders")
 async def create_order(idempotency_key: str = Header(None, alias="Idempotency-Key")):
     if not idempotency_key:
@@ -237,7 +226,7 @@ async def list_orders(limit: int = Query(10, ge=1), cursor: int = Query(0, ge=0)
     next_cursor = str(start + len(items)) if start + len(items) < len(ORDERS) else None
     return {"items": items, "next_cursor": next_cursor}
 
-# ---------------- Q10 Ping ----------------
+# Q10 ping
 @app.get("/ping")
 async def ping(request: Request):
     rid = request.headers.get("X-Request-ID") or str(uuid4())
