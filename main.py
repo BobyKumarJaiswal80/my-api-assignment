@@ -66,21 +66,20 @@ async def work(n: int):
     counter += 1
     return {"email": "24f2000080@ds.study.iitm.ac.in", "done": n}
 # Q3: Effective Config (Isse add karo)
+# Q3: Naya, Robust Effective Config
 @app.get("/effective-config")
 async def get_effective_config(request: Request):
+    # Default values
     config = {"port": 8000, "workers": 1, "debug": False, "log_level": "info", "api_key": "****"}
-    if os.path.exists("config.development.yaml"):
-        with open("config.development.yaml", "r") as f:
-            data = yaml.safe_load(f)
-            if data: config.update(data)
     
-    # Query parameters (CLI overrides)
-    for key, value in request.query_params.multi_items():
-        if key == "port": config["port"] = int(value)
-        elif key == "workers": config["workers"] = int(value)
-        elif key == "debug": config["debug"] = value.lower() in ["true", "1", "yes", "on"]
-        else: config[key] = value
-    config["api_key"] = "****"
+    # Query parameters ko handle karna
+    params = dict(request.query_params)
+    for key, val in params.items():
+        if key == "port": config["port"] = int(val)
+        elif key == "workers": config["workers"] = int(val)
+        elif key == "debug": config["debug"] = val.lower() in ["true", "1", "yes", "on"]
+        else: config[key] = val
+            
     return config
 
 # Q4: Redis Hit & Health (Inhe add karo)
