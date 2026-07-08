@@ -101,19 +101,16 @@ async def get_count(key: str):
 async def healthz():
     return {"status": "ok", "redis": "up"}
 
-# Q5: Analytics
+# Q5: Analytics (Header handling fix)
 @app.post("/analytics")
-async def analytics(data: dict, x_api_key: str = Header(None)):
-    # API key wahi honi chahiye jo grader expect kar raha hai
+async def analytics(data: dict, x_api_key: str = Header(None, alias="X-API-KEY")):
+    # Agar key missing hai ya galat hai, 401 return karo
     if x_api_key != "ak_yszijq2eseo8gstan0dx9ow8":
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
+    # ... baki ka logic wahi rahega ...
     events = data.get("events", [])
-    
-    # Revenue aur stats calculate karna
-    total_events = len(events)
     revenue = sum(e.get("amount", 0) for e in events if e.get("amount", 0) > 0)
-    
     user_totals = {}
     for e in events:
         user = e.get("user")
@@ -125,7 +122,7 @@ async def analytics(data: dict, x_api_key: str = Header(None)):
     
     return {
         "email": "24f2000080@ds.study.iitm.ac.in",
-        "total_events": total_events,
+        "total_events": len(events),
         "unique_users": len(set(e.get("user") for e in events if e.get("user"))),
         "revenue": float(revenue),
         "top_user": top_user
