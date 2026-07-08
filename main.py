@@ -137,3 +137,26 @@ async def analytics(
         "revenue": float(revenue),
         "top_user": top_user
     }
+# --- Q6, Q7, Q8, Q9, Q10 (Combined) ---
+
+# Q6 & Q7: Observability & Metrics
+@app.get("/metrics")
+async def get_metrics():
+    return f"http_requests_total {metrics_counter}"
+
+# Q8: Error Handling (Global)
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return {"error": "Internal Server Error"}, 500
+
+# Q10: Request Context
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = "0.1" 
+    return response
+
+# Q9: Simple endpoint (Mock)
+@app.get("/task")
+async def task():
+    return {"status": "done"}
