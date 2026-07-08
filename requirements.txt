@@ -1,4 +1,7 @@
 fastapi
 uvicorn
-PyJWT[crypto]
-cryptography
+pyjwt[crypto]
+pyyaml
+numpy
+redis
+requests
