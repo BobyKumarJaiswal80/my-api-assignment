@@ -99,3 +99,27 @@ async def get_count(key: str):
 async def healthz():
     return {"status": "ok", "redis": "up"}
 
+# Q5: Analytics
+@app.post("/analytics")
+async def analytics(data: dict, x_api_key: str = Header(None)):
+    # 1. API Key check (Agar ye match nahi hogi to error aayega)
+    if x_api_key != "ak_yszijq2eseo8gstan0dx9ow8":
+        raise HTTPException(status_code=401)
+    
+    events = data.get("events", [])
+    revenue = sum(e["amount"] for e in events if e["amount"] > 0)
+    user_totals = {}
+    for e in events:
+        if e["amount"] > 0:
+            user_totals[e["user"]] = user_totals.get(e["user"], 0) + e["amount"]
+    
+    # 2. Logic check
+    top_user = max(user_totals, key=user_totals.get) if user_totals else None
+    
+    return {
+        "email": "24f2000080@ds.study.iitm.ac.in",
+        "total_events": len(events),
+        "unique_users": len(set(e["user"] for e in events)),
+        "revenue": float(revenue),
+        "top_user": top_user
+    }
