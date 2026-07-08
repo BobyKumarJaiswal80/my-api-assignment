@@ -1,6 +1,6 @@
 fastapi
-uvicorn
+uvicorn[standard]
 PyJWT[crypto]
-pyyaml
+PyYAML
 numpy
 psutil
