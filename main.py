@@ -69,4 +69,4 @@ async def get_metrics():
 async def work(n: int):
     global counter
     counter += 1
-    return {"email": "24f2000080@bhu.ac.in", "done": n}
+    return {"email": "24f2000080@ds.study.iitm.ac.in", "done": n}
