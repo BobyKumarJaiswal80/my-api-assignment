@@ -11,7 +11,7 @@ app = FastAPI()
 # FIX Q1: Strict CORS policy
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dash-w096j7.example.com"], # Sirf ye allow hai
+    allow_origins=["*"], # Sirf ye allow hai
     allow_methods=["*"],
     allow_headers=["*"],
 )
