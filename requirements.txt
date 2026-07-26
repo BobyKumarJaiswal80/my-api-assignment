@@ -1,5 +1,6 @@
 flask
 gunicorn
+mcp
 fastapi
 uvicorn[standard]
 PyJWT[crypto]
